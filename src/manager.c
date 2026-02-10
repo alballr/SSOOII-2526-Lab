@@ -9,8 +9,7 @@
 
 #define NUM_PROCESSES 3
 #define INITIAL_SIZE 10
-#define LECTURA 0
-#define ESCRITURA 1
+
 
 /************************************************************
  * Project        : Practica 1 de Sistemas Operativos II
@@ -30,13 +29,13 @@
  *
  ************************************************************/
 
-struct FichaEstudiante *g_Estudiantes = NULL; // Tabla de fichas de estudiantes
-int g_numEstudiantes = 0; // Número de estudiantes
+struct FichaEstudiante *g_Estudiantes = NULL; /*Tabla de fichas de estudiantes */
+int g_numEstudiantes = 0; /*Número de estudiantes*/ 
 
 /* Métodos de apoyo */
 void crearFichas();
 
-/************ Main function ************/
+/************ Función Main ************/
 int main(int argc, char *argv){
     pid_t pid_A;
     int status; //Status para el wait
@@ -75,6 +74,7 @@ int main(int argc, char *argv){
     }
     }
 
+/************ otros métodos ************/
 void crearFichas(){
     FILE *fd;
     char dni[32];

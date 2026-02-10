@@ -5,6 +5,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <definitions.h>
+
+#define BUFFER_SIZE 4096
+#define MAX_PATH 4096
 
 /************************************************************
  * Project        : Practica 1 de Sistemas Operativos II
@@ -25,20 +29,29 @@
  ************************************************************/
 
 int main(int argc, char *argv[]){
-    FILE *fd;
-    char dni[32];
-    char grupo;
-    int nota;
-    char path[512];
+    int num_estudiantes = 0;
+    int i = 0; // no puedo poner esto??
+    char path[MAX_PATH];
+    struct FichaEstudiante *p_tabla_estudiantes = NULL; //tabla que almacena los datos de todos los estudiantes
 
-    if((fd=fopen("estudiantes.txt","r"))== NULL){
-        fprintf(stderr,"Error intentando leer el archivo 'estudiantes.txt'\n");
+    if (read(0, &num_estudiantes, sizeof(int)) <= 0) {
+        perror("[PA] Error leyendo numero de estudiantes");
+        exit(EXIT_FAILURE);
     }
-    
-   while (fscanf(fd,"%s %c %d", dni, &grupo, &nota) == 3) {
-        snprintf(path,512,"./estudiantes/%s",dni);
-        mkdir(path,0775);
-    } 
+    if((p_tabla_estudiantes = malloc(num_estudiantes * sizeof(struct FichaEstudiante))) == NULL){
+        perror("[MANAGER] Error alocando espacio para las fichas de Estudiantes\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if( read(0,p_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
+        perror("[PA] Error leyendo lista de estudiantes");
+        exit(EXIT_FAILURE);
+    }
+
+    for (i = 0; i < num_estudiantes; i++) {
+        snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni); // usar el campo dni
+        mkdir(path, 0775);
+    }
     
     return EXIT_SUCCESS;
 }
