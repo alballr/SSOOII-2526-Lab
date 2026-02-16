@@ -33,7 +33,7 @@ clean : clean-students
 clean-students:
 	rm -rf ./estudiantes/*
 
-execute: clean all
+execute: all
 	./$(DIREXE)manager
 
 

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <definitions.h>
+#include "definitions.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -59,6 +59,8 @@ void manejador();
         }
         system(str_copy);    
     }
+    sleep(5);
+    printf("[PB] Proceso terminado \n");
     return EXIT_SUCCESS;    
 }
 
@@ -71,7 +73,7 @@ void instalarManejador(){
 
 void manejador(int signal){
     if (signal == SIGINT){
-        printf("[PB] Terminando el proceso (sIGINT) \n");
+        printf("[PB] Terminando el proceso (SIGINT) \n");
         exit(EXIT_SUCCESS);
     }
 }

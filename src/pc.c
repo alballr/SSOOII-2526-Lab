@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <definitions.h>
+#include "definitions.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -71,6 +71,8 @@ int main(int argc, char *argv[]){
         perror("[PC] Error enviando la nota media\n");
         exit(EXIT_FAILURE);
     }
+    sleep(5);
+    printf("[PC] Proceso terminado \n");
     return EXIT_SUCCESS;
 }
 
@@ -83,7 +85,7 @@ void instalarManejador(){
 
 void manejador(int signal){
     if (signal == SIGINT){
-        printf("[PC] Terminando el proceso (sIGINT) \n");
+        printf("[PC] Terminando el proceso (SIGINT) \n");
         exit(EXIT_SUCCESS);
     }
 }

@@ -6,8 +6,9 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include </home/alballr/SSOO/SSOOII-2526-Lab/include/definitions.h>
+#include "definitions.h"
 #include <signal.h>
+#include <errno.h>
 
 #define NUM_PROCESOS 3 /*Numero de procesos del programa (pa, pb y pc)*/
 #define CAPACIDAD_INI 10 /*Capacidad inicial de la estructura de estudiantes*/
@@ -15,7 +16,7 @@
 /************************************************************
  * Project        : Practica 1 de Sistemas Operativos II
  *
- * Program name   : manaer.c
+ * Program name   : manager.c
  *
  * Author         : Alba Llorente
  *
@@ -36,11 +37,11 @@ void instalarManejador();
 void manejador();
 void liberarRecursos();
 void finalizarProcesos();
+void esperarProcesos();
 
 
 /************ Función Main ************/
 int main(int argc, char *argv[]){
-    int estado; /*Status para el wait*/
     int tuberia_A[2]; /*Tuberia que conecta el manager con el proceso A*/
     int tuberia_B[2]; /*Tuberia que conecta el manager con el proceso B*/
     int tuberia_C[2]; /*Tuberia que conecta el manager con el proceso C*/
@@ -60,20 +61,20 @@ int main(int argc, char *argv[]){
             close(tuberia_A[ESCRITURA]);    
             dup2(tuberia_A[LECTURA], STDIN_FILENO);     
             close(tuberia_A[LECTURA]);
-            sleep(1);
             execl("./exec/pa","pa",NULL);
              
-            fprintf(stderr,"Error ejecutando el código de el proceso A\n");
+            fprintf(stderr,"Error ejecutando el código de el proceso A: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
     }
+    printf("[MANAGER] Proceso A creado \n");
     enviarEstudiantes(tuberia_A);
 
-    if(waitpid(g_pids[0],&estado,0) == -1){
+    if(wait(NULL) == -1){
         fprintf(stderr, "[MANAGER] Error esperando al proceso A \n");
         return EXIT_FAILURE;
     }
-    g_pids[0] = -1; /*Para marcar que este proceso ya finalizó.*/
-    sleep(1);
+    g_pids[0] = 0; /*Para marcar que este proceso ya finalizó.*/
+    sleep(3);
     /****** Creacion de PB *******/
     switch(g_pids[1] = fork()){
        case -1:
@@ -83,13 +84,13 @@ int main(int argc, char *argv[]){
             close(tuberia_B[ESCRITURA]);    
             dup2(tuberia_B[LECTURA], STDIN_FILENO);     
             close(tuberia_B[LECTURA]);
-            sleep(1);
             execl("./exec/pb","pb",NULL);
              
-            fprintf(stderr," Error ejecutando el código de el proceso B\n");
+            fprintf(stderr," Error ejecutando el código de el proceso B %s\n", strerror(errno));
             exit(EXIT_FAILURE);       
     }
     enviarEstudiantes(tuberia_B);
+    printf("[MANAGER] Proceso B creado \n");
 
      /****** Creacion de PC *******/
     sprintf(str_tuberiaC, "%d", tuberia_C2[ESCRITURA]);
@@ -102,14 +103,17 @@ int main(int argc, char *argv[]){
             close(tuberia_C[ESCRITURA]);    
             dup2(tuberia_C[LECTURA], STDIN_FILENO);     
             close(tuberia_C[LECTURA]);
-            sleep(1);
             execl("./exec/pc", "pc", str_tuberiaC, NULL);
              
-            fprintf(stderr," Error ejecutando el código de el proceso C\n");
+            fprintf(stderr," Error ejecutando el código de el proceso C %s\n", strerror(errno));
             exit(EXIT_FAILURE);       
     }
     enviarEstudiantes(tuberia_C);
+    printf("[MANAGER] Proceso C creado\n");
 
+     /****** Esperar a finalización *******/
+    esperarProcesos();
+    printf("[MANAGER] Programa terminado \n");
     return EXIT_SUCCESS;
     }
 
@@ -186,6 +190,7 @@ void manejador(int signal){
         printf("[MANAGER] Terminando el programa (Ctrl + C) \n");
         finalizarProcesos();
         liberarRecursos();
+        exit(EXIT_SUCCESS);
     }
 }
 
@@ -193,9 +198,9 @@ void finalizarProcesos(){
     int i;
     printf("[MANAGER] Finalizando los procesos en ejecución...\n");
     for(i = 0; i < NUM_PROCESOS; i++){
-        if(g_pids[i]!= -1){
-            if(kill(g_pids[i], SIGINT) == -1){
-                fprintf(stderr," [MANAGER] Error al terminar el proceso %s \n",65+i);
+        if (g_pids[i] > 0) {
+            if (kill(g_pids[i], SIGINT) == -1) {
+                fprintf(stderr, "[MANAGER] Error al terminar el proceso %c (pid %d)\n", 'A' + i, g_pids[i]);
             }
         }
     }
@@ -213,5 +218,17 @@ void liberarRecursos(){
             
             fprintf(stderr,"Error ejecutando el código de el proceso D\n");
             exit(EXIT_FAILURE);
+    }
+}
+
+void esperarProcesos(){
+    int i, pid;
+    for(i=0; i<2;i++){
+       pid = wait(NULL);
+       for(i=1;i<3;i++){
+        if (g_pids[i]==pid){
+            g_pids[i] = 0;
+        }
+       } 
     }
 }

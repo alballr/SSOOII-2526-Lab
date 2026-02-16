@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include <definitions.h>
+#include "definitions.h"
 #include <signal.h>
 
 #define BUFFER_SIZE 4096
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
     instalarManejador();
 
     if (read(0, &num_estudiantes, sizeof(int)) <= 0) {
-        perror("[PA] Error leyendo numero de estudiantes");
+        perror("[PA] Error leyendo numero de estudiantes \n");
         exit(EXIT_FAILURE);
     }
     if((p_tabla_estudiantes = malloc(num_estudiantes * sizeof(struct FichaEstudiante))) == NULL){
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
     }
 
     if( read(0,p_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
-        perror("[PA] Error leyendo lista de estudiantes");
+        perror("[PA] Error leyendo lista de estudiantes \n");
         exit(EXIT_FAILURE);
     }
 
@@ -52,6 +52,7 @@ int main(int argc, char *argv[]){
         snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni); 
         mkdir(path, 0775);
     } 
+    printf("[PA] Proceso terminado \n");
     return EXIT_SUCCESS;
 }
 
