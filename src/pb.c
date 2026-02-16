@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 
 /************************************************************
  * Project        : Practica 1 de Sistemas Operativos II
@@ -19,12 +20,17 @@
  ************************************************************/
 #define MAX_PATH 4096
 
+void instalarManejador();
+void manejador();
+
  int main(int argc, char* argv[]){
     int num_estudiantes = 0;
-    int i,  fd = 0; 
+    int i; 
     char str_copy[MAX_PATH];
     struct FichaEstudiante *p_tabla_estudiantes = NULL; /*tabla que almacena los datos de todos los estudiantes*/
 
+    instalarManejador();
+    
     if(read(0, &num_estudiantes, sizeof(int)) <= 0) {
         perror("[PB] Error leyendo numero de estudiantes\n");
         exit(EXIT_FAILURE);
@@ -42,17 +48,30 @@
     for (i = 0; i < num_estudiantes; i++) {
         switch(p_tabla_estudiantes[i].grupo){
             case 'A':
-                sprintf(str_copy, MAX_PATH, "cp examenes/A.pdf %s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni);
+                snprintf(str_copy, MAX_PATH, "cp examenes/A.pdf %s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni);
                 break;
             case 'B':
-                sprintf(str_copy, MAX_PATH, "cp examenes/B.pdf %s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni);
+                snprintf(str_copy, MAX_PATH, "cp examenes/B.pdf %s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni);
                 break;
             case 'C':
-                sprintf(str_copy, MAX_PATH, "cp examenes/C.pdf %s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni);
+                snprintf(str_copy, MAX_PATH, "cp examenes/C.pdf %s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni);
                 break;
         }
         system(str_copy);    
     }
-    return EXIT_FAILURE;
-        
+    return EXIT_SUCCESS;    
+}
+
+void instalarManejador(){
+    if(signal(SIGINT, manejador) == SIG_ERR){
+        perror("[PB] No se pudo establecer el manejador de señales para SIGINT\n");
+        exit(EXIT_FAILURE);
+    }  
+}
+
+void manejador(int signal){
+    if (signal == SIGINT){
+        printf("[PB] Terminando el proceso (sIGINT) \n");
+        exit(EXIT_SUCCESS);
+    }
 }

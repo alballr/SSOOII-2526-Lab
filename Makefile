@@ -7,7 +7,7 @@ CFLAGS := -I$(DIRHEA) -c -Wall -ansi
 LDLIBS := -lpthread -lrt
 CC := gcc
 
-all : dirs manager pa pb
+all : dirs manager pa pb pc 
 
 dirs:
 	mkdir -p $(DIROBJ) $(DIREXE)
@@ -33,5 +33,7 @@ clean : clean-students
 clean-students:
 	rm -rf ./estudiantes/*
 
+execute: clean all
+	./$(DIREXE)manager
 
 

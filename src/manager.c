@@ -6,11 +6,11 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include <definitions.h>
+#include </home/alballr/SSOO/SSOOII-2526-Lab/include/definitions.h>
+#include <signal.h>
 
-#define NUM_PROCESSES 3
-#define INITIAL_SIZE 10
-
+#define NUM_PROCESOS 3 /*Numero de procesos del programa (pa, pb y pc)*/
+#define CAPACIDAD_INI 10 /*Capacidad inicial de la estructura de estudiantes*/
 
 /************************************************************
  * Project        : Practica 1 de Sistemas Operativos II
@@ -22,35 +22,37 @@
  * Date created   : 10/02/2026
  *
  * Purpose        : Proceso encargado de la creación y manejo de los pdem
- *
- * Revision History :
- *
- * Date        Author    Ref   Revision
- * 10/02/2026  Alba   1      Paso de la lectura del archivo estudiantes.txt a manager.c
- *
  ************************************************************/
 
 struct FichaEstudiante *g_Estudiantes = NULL; /*Tabla de fichas de estudiantes */
 int g_numEstudiantes = 0; /*Número de estudiantes*/ 
+pid_t g_pids[NUM_PROCESOS]; /*almacena los pid de los procesos hijo*/
 
 /* Métodos de apoyo */
 void crearFichas();
+void crearTuberias(int* tuberia_A, int* tuberia_B, int* tuberia_C, int* tuberia_C2);
+void enviarEstudiantes(int *tuberia);
+void instalarManejador();
+void manejador();
+void liberarRecursos();
+void finalizarProcesos();
+
 
 /************ Función Main ************/
-int main(int argc, char *argv){
-    pid_t pid_A, pid_B, pid_C;
-    int status; /*Status para el wait*/
+int main(int argc, char *argv[]){
+    int estado; /*Status para el wait*/
     int tuberia_A[2]; /*Tuberia que conecta el manager con el proceso A*/
     int tuberia_B[2]; /*Tuberia que conecta el manager con el proceso B*/
     int tuberia_C[2]; /*Tuberia que conecta el manager con el proceso C*/
     int tuberia_C2[2];/*Segunda tuberia que conecta el manager con el proceso C*/
     char str_tuberiaC[256]; /*String de la tubería de C*/
 
+    instalarManejador();
     crearFichas();
     crearTuberias(tuberia_A, tuberia_B, tuberia_C, tuberia_C2);    
 
     /****** Creacion de PA *******/
-    switch(pid_A=fork()){
+    switch(g_pids[0]=fork()){
         case -1:
             perror("[MANAGER] Error creando el proceso A \n");
             return EXIT_FAILURE;
@@ -58,20 +60,22 @@ int main(int argc, char *argv){
             close(tuberia_A[ESCRITURA]);    
             dup2(tuberia_A[LECTURA], STDIN_FILENO);     
             close(tuberia_A[LECTURA]);
-
+            sleep(1);
             execl("./exec/pa","pa",NULL);
              
-            fprintf(stderr,"[MANAGER] Error ejecutando el código de el proceso A\n");
+            fprintf(stderr,"Error ejecutando el código de el proceso A\n");
             exit(EXIT_FAILURE);
     }
     enviarEstudiantes(tuberia_A);
 
-    if(waitpid(pid_A,&status,0) == -1){
+    if(waitpid(g_pids[0],&estado,0) == -1){
         fprintf(stderr, "[MANAGER] Error esperando al proceso A \n");
         return EXIT_FAILURE;
     }
+    g_pids[0] = -1; /*Para marcar que este proceso ya finalizó.*/
+    sleep(1);
     /****** Creacion de PB *******/
-    switch(pid_B = fork()){
+    switch(g_pids[1] = fork()){
        case -1:
             perror("[MANAGER] Error creando el proceso B \n");
             return EXIT_FAILURE;
@@ -79,10 +83,10 @@ int main(int argc, char *argv){
             close(tuberia_B[ESCRITURA]);    
             dup2(tuberia_B[LECTURA], STDIN_FILENO);     
             close(tuberia_B[LECTURA]);
-
+            sleep(1);
             execl("./exec/pb","pb",NULL);
              
-            fprintf(stderr,"[MANAGER] Error ejecutando el código de el proceso B\n");
+            fprintf(stderr," Error ejecutando el código de el proceso B\n");
             exit(EXIT_FAILURE);       
     }
     enviarEstudiantes(tuberia_B);
@@ -90,7 +94,7 @@ int main(int argc, char *argv){
      /****** Creacion de PC *******/
     sprintf(str_tuberiaC, "%d", tuberia_C2[ESCRITURA]);
 
-    switch(pid_B = fork()){
+    switch(g_pids[2] = fork()){
        case -1:
             perror("[MANAGER] Error creando el proceso C \n");
             return EXIT_FAILURE;
@@ -98,14 +102,14 @@ int main(int argc, char *argv){
             close(tuberia_C[ESCRITURA]);    
             dup2(tuberia_C[LECTURA], STDIN_FILENO);     
             close(tuberia_C[LECTURA]);
-
+            sleep(1);
             execl("./exec/pc", "pc", str_tuberiaC, NULL);
              
-            fprintf(stderr,"[MANAGER] Error ejecutando el código de el proceso C\n");
+            fprintf(stderr," Error ejecutando el código de el proceso C\n");
             exit(EXIT_FAILURE);       
     }
     enviarEstudiantes(tuberia_C);
-    
+
     return EXIT_SUCCESS;
     }
 
@@ -115,19 +119,32 @@ void crearFichas(){
     char dni[32];
     char grupo;
     int nota;
-    int capacidad = INITIAL_SIZE;
+    int capacidad = CAPACIDAD_INI;
 
     if((fd = fopen(STU_FILE_PATH,"r"))== NULL){
-        perror("[MANAGER] Error intentando leer el archivo 'estudiantes.txt'\n");
-    }
-
-    if((g_Estudiantes = malloc(capacidad * sizeof(struct FichaEstudiante))) == NULL){
-        perror("[MANAGER] Error alocando espacio para las fichas de Estudiantes\n");
+        perror("[MANAGER] Error intentando leer el archivo 'estudiantes.txt'");
         exit(EXIT_FAILURE);
     }
 
-    while (fscanf(fd,"%s %c %d", dni, &grupo, &nota) == 3) {
-        strcpy(g_Estudiantes[g_numEstudiantes].dni,dni);
+    if((g_Estudiantes = malloc(capacidad * sizeof(struct FichaEstudiante))) == NULL){
+        perror("[MANAGER] Error alocando espacio para las fichas de Estudiantes");
+        exit(EXIT_FAILURE);
+    }
+
+    while (fscanf(fd, "%31s %c %d", dni, &grupo, &nota) == 3) {
+        if (g_numEstudiantes >= capacidad) {
+            capacidad *= 2;
+            struct FichaEstudiante *tmp = realloc(g_Estudiantes, capacidad * sizeof(struct FichaEstudiante));
+            if (tmp == NULL) {
+                perror("[MANAGER] Error realocando espacio para las fichas de Estudiantes");
+                free(g_Estudiantes);
+                fclose(fd);
+                exit(EXIT_FAILURE);
+            }
+            g_Estudiantes = tmp;
+        }
+        strncpy(g_Estudiantes[g_numEstudiantes].dni, dni, sizeof(g_Estudiantes[g_numEstudiantes].dni)-1);
+        g_Estudiantes[g_numEstudiantes].dni[sizeof(g_Estudiantes[g_numEstudiantes].dni)-1] = '\0';
         g_Estudiantes[g_numEstudiantes].grupo = grupo;
         g_Estudiantes[g_numEstudiantes].nota = nota;
         g_numEstudiantes++;
@@ -138,15 +155,15 @@ void crearFichas(){
 void crearTuberias(int* tuberia_A, int* tuberia_B, int* tuberia_C, int* tuberia_C2){
     if(pipe(tuberia_A) == -1){
         perror("[MANAGER] Error estableciendo la tubería para el proceso A");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
     if(pipe(tuberia_B) == -1){
         perror("[MANAGER] Error estableciendo la tubería para el proceso B");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
-    if(pipe(tuberia_C) == -1 || pipe(tuberia_C2)){
+    if(pipe(tuberia_C) == -1 || pipe(tuberia_C2) == -1){
         perror("[MANAGER] Error estableciendo las tuberías para el proceso C");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -155,4 +172,46 @@ void enviarEstudiantes(int* tuberia){
     write(tuberia[ESCRITURA], &g_numEstudiantes, sizeof(int));
     write(tuberia[ESCRITURA], g_Estudiantes, g_numEstudiantes * sizeof(struct FichaEstudiante));
     close(tuberia[ESCRITURA]);
+}
+
+void instalarManejador(){
+    if(signal(SIGINT, manejador) == SIG_ERR){
+        perror("[MANAGER] No se pudo establecer el manejador de señales para SIGINT\n");
+        exit(EXIT_FAILURE);
+    }  
+}
+
+void manejador(int signal){
+    if (signal == SIGINT){
+        printf("[MANAGER] Terminando el programa (Ctrl + C) \n");
+        finalizarProcesos();
+        liberarRecursos();
+    }
+}
+
+void finalizarProcesos(){
+    int i;
+    printf("[MANAGER] Finalizando los procesos en ejecución...\n");
+    for(i = 0; i < NUM_PROCESOS; i++){
+        if(g_pids[i]!= -1){
+            if(kill(g_pids[i], SIGINT) == -1){
+                fprintf(stderr," [MANAGER] Error al terminar el proceso %s \n",65+i);
+            }
+        }
+    }
+}
+
+void liberarRecursos(){
+    free(g_Estudiantes);
+
+    switch(fork()){
+        case -1:
+            perror("[MANAGER] Error creando el proceso D \n");
+            exit(EXIT_FAILURE);
+        case 0:
+            execl("/bin/rm","rm","-rf","./estudiantes/*", NULL);
+            
+            fprintf(stderr,"Error ejecutando el código de el proceso D\n");
+            exit(EXIT_FAILURE);
+    }
 }

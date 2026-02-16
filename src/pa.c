@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <definitions.h>
+#include <signal.h>
 
 #define BUFFER_SIZE 4096
 #define MAX_PATH 4096
@@ -20,20 +21,18 @@
  * Date created   : 09/02/2026
  *
  * Purpose        : Código del proceso A encargado de la creación de un directorio por estudiante
- *
- * Revision History :
- *
- * Date        Author    Ref   Revision
- * 10/02/2026  Alba   1      Paso de la lectura del archivo estudiantes.txt a manager.c
- * 16/02/2026  Alba   2      Creación de los procesos B y C
- *
  ************************************************************/
+
+void instalarManejador();
+void manejador();
 
 int main(int argc, char *argv[]){
     int num_estudiantes = 0;
     int i = 0; 
     char path[MAX_PATH];
     struct FichaEstudiante *p_tabla_estudiantes = NULL; /*tabla que almacena los datos de todos los estudiantes*/
+
+    instalarManejador();
 
     if (read(0, &num_estudiantes, sizeof(int)) <= 0) {
         perror("[PA] Error leyendo numero de estudiantes");
@@ -52,7 +51,20 @@ int main(int argc, char *argv[]){
     for (i = 0; i < num_estudiantes; i++) {
         snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni); 
         mkdir(path, 0775);
-    }
-    
+    } 
     return EXIT_SUCCESS;
+}
+
+void instalarManejador(){
+    if(signal(SIGINT, manejador) == SIG_ERR){
+        perror("[PA] No se pudo establecer el manejador de señales para SIGINT\n");
+        exit(EXIT_FAILURE);
+    }  
+}
+
+void manejador(int signal){
+    if (signal == SIGINT){
+        printf("[PA] Terminando el proceso (sIGINT) \n");
+        exit(EXIT_SUCCESS);
+    }
 }
