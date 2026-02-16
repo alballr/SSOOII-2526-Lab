@@ -1,10 +1,10 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <definitions.h>
 
 #define BUFFER_SIZE 4096
@@ -25,21 +25,22 @@
  *
  * Date        Author    Ref   Revision
  * 10/02/2026  Alba   1      Paso de la lectura del archivo estudiantes.txt a manager.c
+ * 16/02/2026  Alba   2      Creación de los procesos B y C
  *
  ************************************************************/
 
 int main(int argc, char *argv[]){
     int num_estudiantes = 0;
-    int i = 0; // no puedo poner esto??
+    int i = 0; 
     char path[MAX_PATH];
-    struct FichaEstudiante *p_tabla_estudiantes = NULL; //tabla que almacena los datos de todos los estudiantes
+    struct FichaEstudiante *p_tabla_estudiantes = NULL; /*tabla que almacena los datos de todos los estudiantes*/
 
     if (read(0, &num_estudiantes, sizeof(int)) <= 0) {
         perror("[PA] Error leyendo numero de estudiantes");
         exit(EXIT_FAILURE);
     }
     if((p_tabla_estudiantes = malloc(num_estudiantes * sizeof(struct FichaEstudiante))) == NULL){
-        perror("[MANAGER] Error alocando espacio para las fichas de Estudiantes\n");
+        perror("[PA] Error alocando espacio para las fichas de Estudiantes\n");
         exit(EXIT_FAILURE);
     }
 
@@ -49,7 +50,7 @@ int main(int argc, char *argv[]){
     }
 
     for (i = 0; i < num_estudiantes; i++) {
-        snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni); // usar el campo dni
+        snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni); 
         mkdir(path, 0775);
     }
     
