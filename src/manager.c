@@ -56,6 +56,7 @@ int main(int argc, char *argv[]){
     switch(g_pids[0]=fork()){
         case -1:
             perror("[MANAGER] Error creando el proceso A \n");
+            free(g_Estudiantes);
             return EXIT_FAILURE;
         case 0:
             close(tuberia_A[ESCRITURA]);    
@@ -64,6 +65,7 @@ int main(int argc, char *argv[]){
             execl("./exec/pa","pa",NULL);
              
             fprintf(stderr,"Error ejecutando el código de el proceso A: %s\n", strerror(errno));
+            free(g_Estudiantes);
             exit(EXIT_FAILURE);
     }
     printf("[MANAGER] Proceso A creado \n");
@@ -71,6 +73,7 @@ int main(int argc, char *argv[]){
 
     if(wait(NULL) == -1){
         fprintf(stderr, "[MANAGER] Error esperando al proceso A \n");
+        liberarRecursos();
         return EXIT_FAILURE;
     }
     g_pids[0] = 0; /*Para marcar que este proceso ya finalizó.*/
@@ -79,6 +82,7 @@ int main(int argc, char *argv[]){
     switch(g_pids[1] = fork()){
        case -1:
             perror("[MANAGER] Error creando el proceso B \n");
+            liberarRecursos();
             return EXIT_FAILURE;
         case 0:
             close(tuberia_B[ESCRITURA]);    
@@ -87,6 +91,7 @@ int main(int argc, char *argv[]){
             execl("./exec/pb","pb",NULL);
              
             fprintf(stderr," Error ejecutando el código de el proceso B %s\n", strerror(errno));
+            liberarRecursos();
             exit(EXIT_FAILURE);       
     }
     enviarEstudiantes(tuberia_B);
@@ -98,6 +103,7 @@ int main(int argc, char *argv[]){
     switch(g_pids[2] = fork()){
        case -1:
             perror("[MANAGER] Error creando el proceso C \n");
+            liberarRecursos();
             return EXIT_FAILURE;
         case 0:
             close(tuberia_C[ESCRITURA]);    
@@ -106,6 +112,7 @@ int main(int argc, char *argv[]){
             execl("./exec/pc", "pc", str_tuberiaC, NULL);
              
             fprintf(stderr," Error ejecutando el código de el proceso C %s\n", strerror(errno));
+            liberarRecursos();
             exit(EXIT_FAILURE);       
     }
     enviarEstudiantes(tuberia_C);
@@ -159,14 +166,17 @@ void crearFichas(){
 void crearTuberias(int* tuberia_A, int* tuberia_B, int* tuberia_C, int* tuberia_C2){
     if(pipe(tuberia_A) == -1){
         perror("[MANAGER] Error estableciendo la tubería para el proceso A");
+        free(g_Estudiantes);
         exit(EXIT_FAILURE);
     }
     if(pipe(tuberia_B) == -1){
         perror("[MANAGER] Error estableciendo la tubería para el proceso B");
+        free(g_Estudiantes);
         exit(EXIT_FAILURE);
     }
     if(pipe(tuberia_C) == -1 || pipe(tuberia_C2) == -1){
         perror("[MANAGER] Error estableciendo las tuberías para el proceso C");
+        free(g_Estudiantes);
         exit(EXIT_FAILURE);
     }
 }
