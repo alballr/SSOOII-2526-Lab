@@ -18,7 +18,6 @@
  *
  * Purpose        : Código del proceso B encargado de copiar el modelo de examen a cada carpeta.
  ************************************************************/
-#define MAX_PATH 4096
 
 void instalarManejador();
 void manejador();
@@ -32,16 +31,16 @@ void manejador();
     instalarManejador();
     
     if(read(0, &num_estudiantes, sizeof(int)) <= 0) {
-        perror("[PB] Error leyendo numero de estudiantes\n");
+        perror("[PB] Error leyendo numero de estudiantes. \n");
         exit(EXIT_FAILURE);
     }
     if((p_tabla_estudiantes = malloc(num_estudiantes * sizeof(struct FichaEstudiante))) == NULL){
-        perror("[PB] Error alocando espacio para las fichas de Estudiantes\n");
+        perror("[PB] Error alocando espacio para las fichas de Estudiantes. \n");
         exit(EXIT_FAILURE);
     }
 
     if( read(0,p_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
-        perror("[PB] Error leyendo lista de estudiantes\n");
+        perror("[PB] Error leyendo lista de estudiantes. \n");
         exit(EXIT_FAILURE);
     }
     
@@ -59,8 +58,13 @@ void manejador();
         }
         system(str_copy);    
     }
-    sleep(5);
-    printf("[PB] Proceso terminado \n");
+
+    if (kill(getppid(), SIGUSR1) == -1) {
+        perror("[PB] Error enviando señal al manager.\n");
+    }
+
+    sleep(5); /* Para poder probar el Ctrl + C*/
+    printf("[PB] Proceso terminado. \n");
     return EXIT_SUCCESS;    
 }
 

@@ -4,6 +4,8 @@
 #define LECTURA 0
 #define ESCRITURA 1
 
+#define MAX_PATH 4096 /*tamaño máximo del path del archivo*/
+
 struct FichaEstudiante {          
     char dni[32];
     char grupo;
