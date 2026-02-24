@@ -5,8 +5,8 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include "definitions.h"
 #include <signal.h>
+#include "definitions.h"
 
 #define BUFFER_SIZE 4096
 

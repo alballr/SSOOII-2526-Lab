@@ -1,6 +1,3 @@
 ******** Log del sistema ********
-Creación de directorios finalizada (tiempo invertido: 0.000ms).
-Copia de modelos de examen, finalizada (tiempo invertido: 0.000ms).
-Creación de archivos con nota necesaria para alcanzar la nota de corte, finalizada (tiempo invertido: 0.000ms).
-La nota media de la clase es: 6.00
-FIN DE PROGRAMA
+Creación de directorios finalizada (tiempo invertido: 0.742ms).
+El usuario interrupió la ejecución del programa (Ctrl + C) 

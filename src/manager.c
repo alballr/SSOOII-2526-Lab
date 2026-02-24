@@ -6,10 +6,10 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
-#include "definitions.h"
 #include <signal.h>
 #include <errno.h>
 #include <sys/time.h>
+#include "definitions.h"
 
 #define BUFFER_SIZE 4096
 #define NUM_PROCESOS 3 /*Numero de procesos del programa (pa, pb y pc)*/
@@ -27,10 +27,14 @@
  * Purpose        : Proceso encargado de la creación y manejo de los pdem
  ************************************************************/
 
+ /* variables globales*/
 struct FichaEstudiante *g_Estudiantes = NULL; /*Tabla de fichas de estudiantes */
 int g_numEstudiantes = 0; /*Número de estudiantes*/ 
 pid_t g_pids[NUM_PROCESOS]; /*almacena los pid de los procesos hijo*/
-struct timeval fin_A, fin_B, fin_C, tiempo_ini1, tiempo_ini2;
+pid_t g_pid_daemon; /* pid del proceso de backup*/
+struct timeval g_fin_B, g_fin_C, g_tiempo_ini1, g_tiempo_ini2; 
+double g_tiempo_B, g_tiempo_C;
+FILE *g_log_file; 
 
 /* Métodos de apoyo */
 void crearFichas();
@@ -41,8 +45,9 @@ void manejador();
 void liberarRecursos();
 void finalizarProcesos();
 void esperarProcesos();
-void prepararLog(double tiempo_A, double tiempo_B, double tiempo_C, double nota_media);
-
+void crearDaemon();
+void ejecutarBackup();
+void manejadorDaemon();
 
 /************ Función Main ************/
 int main(int argc, char *argv[]){
@@ -51,13 +56,22 @@ int main(int argc, char *argv[]){
     int tuberia_C[2]; /*Tuberia que conecta el manager con el proceso C*/
     int tuberia_C2[2];/*Segunda tuberia que conecta el manager con el proceso C*/
     char str_tuberiaC[256], buffer[BUFFER_SIZE]; /*String de la tubería de C*/
-    double tiempo_A, tiempo_B, tiempo_C, nota_media;
+    double tiempo_A, nota_media;
+    struct timeval fin_A;
+
+    crearDaemon();
+    
+    if ((g_log_file=fopen("log.txt", "w")) == NULL) {
+        perror("[MANAGER] Error al crear el archivo log.txt. \n");
+        return EXIT_FAILURE;
+    }
+    fprintf(g_log_file, "******** Log del sistema ********\n");
 
     instalarManejador();
     crearFichas();
     crearTuberias(tuberia_A, tuberia_B, tuberia_C, tuberia_C2);    
 
-    gettimeofday(&tiempo_ini1, NULL);
+    gettimeofday(&g_tiempo_ini1, NULL);
     /****** Creacion de PA *******/
     switch(g_pids[0]=fork()){
         case -1:
@@ -83,13 +97,13 @@ int main(int argc, char *argv[]){
         return EXIT_FAILURE;
     }
     gettimeofday(&fin_A, NULL);
-    tiempo_A = (fin_A.tv_sec - tiempo_ini1.tv_sec) * 1000.0;      
-    tiempo_A += (fin_A.tv_sec - tiempo_ini1.tv_sec) / 1000.0;   
-
+    tiempo_A = (fin_A.tv_sec - g_tiempo_ini1.tv_sec) * 1000.0;      
+    tiempo_A += (fin_A.tv_usec - g_tiempo_ini1.tv_usec) / 1000.0;   
     g_pids[0] = 0; /*Para marcar que este proceso ya finalizó.*/
+    fprintf(g_log_file, "Creación de directorios finalizada (tiempo invertido: %.3fms).\n", tiempo_A);
     sleep(3); /* Para poder probar el Ctrl + C */
 
-    gettimeofday(&tiempo_ini1, NULL); /*Pasa a medir el tiempo para B*/
+    gettimeofday(&g_tiempo_ini1, NULL); /*Pasa a medir el tiempo para B*/
     /****** Creacion de PB *******/
     switch(g_pids[1] = fork()){
        case -1:
@@ -109,8 +123,9 @@ int main(int argc, char *argv[]){
     enviarEstudiantes(tuberia_B);
     printf("[MANAGER] Proceso B creado. \n");
 
-    gettimeofday(&tiempo_ini2, NULL); /*Mide el tiempo para C*/
-     /****** Creacion de PC *******/
+    gettimeofday(&g_tiempo_ini2, NULL); /*Mide el tiempo para C*/
+
+    /****** Creacion de PC *******/
     sprintf(str_tuberiaC, "%d", tuberia_C2[ESCRITURA]);
 
     switch(g_pids[2] = fork()){
@@ -134,19 +149,16 @@ int main(int argc, char *argv[]){
      /****** Esperar a finalización *******/
     esperarProcesos();
 
-    tiempo_B = (fin_B.tv_sec - tiempo_ini1.tv_sec) * 1000.0;      
-    tiempo_B += (fin_B.tv_sec - tiempo_ini1.tv_sec) / 1000.0;
-    
-    tiempo_C = (fin_C.tv_sec - tiempo_ini2.tv_sec) * 1000.0;      
-    tiempo_C += (fin_C.tv_sec - tiempo_ini2.tv_sec) / 1000.0; 
-
     if(read(tuberia_C2[LECTURA], buffer, BUFFER_SIZE) <= 0) {
         perror("[MANAGER] Error leyendo la nota media \n");
         exit(EXIT_FAILURE);
     }
     nota_media = atof(buffer);
-    prepararLog(tiempo_A, tiempo_B, tiempo_C, nota_media);
+    fprintf(g_log_file, "La nota media de la clase es: %.2f\n", nota_media);
+
+    kill(g_pid_daemon, SIGTERM); /* para evitar que siga ejecutando con el programa terminado*/
     printf("[MANAGER] Programa terminado \n");
+    fprintf(g_log_file, "FIN DE PROGRAMA\n");
     return EXIT_SUCCESS;
     }
 
@@ -233,20 +245,28 @@ void manejador(int signal){
     switch(signal){
         case SIGINT:
             printf("[MANAGER] Terminando el programa (Ctrl + C) \n");
+            fprintf(g_log_file, "El usuario interrupió la ejecución del programa (Ctrl + C) \n");
             finalizarProcesos();
             liberarRecursos();
             exit(EXIT_SUCCESS);
         case SIGUSR1: /*enviada por proceso B*/
-            gettimeofday(&fin_B, NULL);
+            gettimeofday(&g_fin_B, NULL);
+            g_tiempo_B = (g_fin_B.tv_sec - g_tiempo_ini1.tv_sec) * 1000.0;      
+            g_tiempo_B += (g_fin_B.tv_usec - g_tiempo_ini1.tv_usec) / 1000.0;
+            fprintf(g_log_file, "Copia de modelos de examen, finalizada (tiempo invertido: %.3fms).\n", g_tiempo_B);
             break;
         case SIGUSR2: /*enviada por proceso C*/
-            gettimeofday(&fin_C, NULL);
+            gettimeofday(&g_fin_C, NULL);
+            g_tiempo_C = (g_fin_C.tv_sec - g_tiempo_ini2.tv_sec) * 1000.0;      
+            g_tiempo_C += (g_fin_C.tv_usec - g_tiempo_ini2.tv_usec) / 1000.0; 
+            fprintf(g_log_file, "Creación de archivos con nota necesaria para alcanzar la nota de corte, finalizada (tiempo invertido: %.3fms).\n", g_tiempo_C);
     } 
 }
 
 void finalizarProcesos(){
     int i;
     printf("[MANAGER] Finalizando los procesos en ejecución...\n");
+    kill(g_pid_daemon, SIGTERM);
     for(i = 0; i < NUM_PROCESOS; i++){
         if (g_pids[i] > 0) {
             if (kill(g_pids[i], SIGINT) == -1) {
@@ -286,19 +306,40 @@ void esperarProcesos(){
     }
 }
 
-void prepararLog(double tiempo_A, double tiempo_B, double tiempo_C, double nota_media) {
-    FILE *fp; 
-    if ((fp=fopen("log.txt", "w")) == NULL) {
-        perror("[MANAGER] Error al crear el archivo log.txt. \n");
-        return;
+void crearDaemon() {
+    switch(g_pid_daemon = fork()){
+        case -1:
+            perror("[MANAGER] Error creando el daemon");
+            exit(EXIT_FAILURE);
+        case  0:
+            if (setsid() < 0) {
+            exit(EXIT_FAILURE);
+            }
+            signal(SIGTERM, manejadorDaemon);
+            while (1) {
+                ejecutarBackup();
+                sleep(60); 
+            }
+        default:
+            printf("[MANAGER] Daemon de backup creado (pid %d)\n", g_pid_daemon);      
+    }  
+}
+
+void ejecutarBackup(){
+    if(system("mkdir -p ./backup") == -1){
+        perror("[BACKUP] Error ejecutando mkdir");
+        exit(EXIT_FAILURE);
     }
+    if(system("cp -r ./estudiantes ./backup/") == -1){
+        perror("[BACKUP] Error ejecutando mkdir");
+        exit(EXIT_FAILURE);
+    }
+    printf("[BACKUP] Backup realizado correctamente\n");
+}
 
-    fprintf(fp, "******** Log del sistema ********\n");
-    fprintf(fp, "Creación de directorios finalizada (tiempo invertido: %.3fms).\n", tiempo_A);
-    fprintf(fp, "Copia de modelos de examen, finalizada (tiempo invertido: %.3fms).\n", tiempo_B);
-    fprintf(fp, "Creación de archivos con nota necesaria para alcanzar la nota de corte, finalizada (tiempo invertido: %.3fms).\n", tiempo_C);
-    fprintf(fp, "La nota media de la clase es: %.2f\n", nota_media);
-    fprintf(fp, "FIN DE PROGRAMA\n");
-
-    fclose(fp);
+void manejadorDaemon(int sig) {
+    if (sig == SIGTERM) {
+        printf("[DAEMON] Finalizando daemon de backup...\n");
+        exit(EXIT_SUCCESS);
+    }
 }

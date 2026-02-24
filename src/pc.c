@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "definitions.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include "definitions.h"
 
 /************************************************************
  * Project        : Practica 1 de Sistemas Operativos II
@@ -27,13 +27,15 @@
 void instalarManejador();
 void manejador();
 
+struct FichaEstudiante *gp_tabla_estudiantes = NULL; /*tabla que almacena los datos de todos los estudiantes*/
+    
 int main(int argc, char *argv[]){
     int num_estudiantes = 0;
-    int i, nota, fd = 0; 
+    int i, nota;
     double media_total = 0;
     char path_notas[MAX_PATH];
-    struct FichaEstudiante *p_tabla_estudiantes = NULL; /*tabla que almacena los datos de todos los estudiantes*/
     char str_notas[MAX_STR];
+    FILE *notas_file; 
 
     instalarManejador();
     
@@ -41,33 +43,31 @@ int main(int argc, char *argv[]){
         perror("[PC] Error leyendo numero de estudiantes. \n");
         exit(EXIT_FAILURE);
     }
-    if((p_tabla_estudiantes = malloc(num_estudiantes * sizeof(struct FichaEstudiante))) == NULL){
+    if((gp_tabla_estudiantes = malloc(num_estudiantes * sizeof(struct FichaEstudiante))) == NULL){
         perror("[PC] Error alocando espacio para las fichas de Estudiantes. \n");
         exit(EXIT_FAILURE);
     }
 
-    if( read(0,p_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
+    if( read(0,gp_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
         perror("[PC] Error leyendo lista de estudiantes. \n");
         exit(EXIT_FAILURE);
     }
 
     for (i = 0; i < num_estudiantes; i++) {
-        snprintf(path_notas, MAX_PATH, "%s/%s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni,NOTAS_FILE);
-        nota = 2 * 5 - p_tabla_estudiantes[i].nota;
-        media_total += p_tabla_estudiantes[i].nota; /*aquí solo sumamos las notas de todos los estudiantes*/
+        snprintf(path_notas, MAX_PATH, "%s/%s/%s", STU_DIR_PATH, gp_tabla_estudiantes[i].dni,NOTAS_FILE);
+        nota = 2 * 5 - gp_tabla_estudiantes[i].nota;
+        media_total += gp_tabla_estudiantes[i].nota; /*aquí solo sumamos las notas de todos los estudiantes*/
 
-        if((fd = open(path_notas, O_WRONLY | O_CREAT | O_TRUNC, 0644)) == -1){
+        if((notas_file = fopen(path_notas, "w")) == NULL){
             perror("[PC] Error creando el archivo de notas\n");
             exit(EXIT_FAILURE);
         }
-        snprintf(str_notas, MAX_STR, "%s %d",NOTAS_STR, nota);
-        if( write(fd,str_notas,strlen(str_notas) + 1) != strlen(str_notas) + 1){
-            perror("[PC] Error escribiendo en el archivo de notas. \n");
-            exit(EXIT_FAILURE);
-        }
+        fprintf(notas_file, "%s %d\n", NOTAS_STR, nota);
+        fclose(notas_file);
     }
+
     media_total = media_total / num_estudiantes;
-    snprintf(str_notas, MAX_STR,"%f",media_total); /*se reutiliza el str usado para escribir las notas*/
+    snprintf(str_notas, MAX_STR,"%f",media_total); 
     if( write(atoi(argv[1]), str_notas, strlen(str_notas) + 1) != strlen(str_notas) + 1){
         perror("[PC] Error enviando la nota media. \n");
         exit(EXIT_FAILURE);
