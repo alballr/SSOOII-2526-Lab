@@ -1,5 +1,4 @@
 PRACTICA 1 - SISTEMAS OPERATIVOS II
-==================================
 
 1) ESTRUCTURA DEL PROYECTO
 - src/
@@ -64,3 +63,5 @@ Limpiar solo contenido de ./estudiantes:
 
   make clean-students
 
+5) REPOSITORIO
+Todo el código junto con los cambios hechos se encuentra en el repositorio: https://github.com/alballr/SSOOII-2526-Lab
