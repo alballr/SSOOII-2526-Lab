@@ -20,9 +20,8 @@
  * Purpose        : Código del proceso C encargado del cálculo de nota minima para aprobar por estudiante
  ************************************************************/
 
-#define MAX_STR 512 /*tamaño maximo del str de notas*/
-#define NOTAS_FILE "notas.txt" /*nombre del archivo de notas*/
-#define NOTAS_STR "La nota que debes obtener en este nuevo examen para superar la prueba es" /*texto que acompaña el archivo de notas*/
+static const size_t MAX_STR = 512; /*tamaño maximo del str de notas*/
+static const char NOTAS_STR[] = "La nota que debes obtener en este nuevo examen para superar la prueba es"; /*texto que acompaña el archivo de notas*/
 
 void instalarManejador();
 void manejador();
@@ -31,7 +30,7 @@ struct FichaEstudiante *gp_tabla_estudiantes = NULL; /*tabla que almacena los da
     
 int main(int argc, char *argv[]){
     int num_estudiantes = 0;
-    int i, nota;
+    int nota;
     double media_total = 0;
     char path_notas[MAX_PATH];
     char str_notas[MAX_STR];
@@ -50,15 +49,17 @@ int main(int argc, char *argv[]){
 
     if( read(0,gp_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
         perror("[PC] Error leyendo lista de estudiantes. \n");
+        free(gp_tabla_estudiantes);
         exit(EXIT_FAILURE);
     }
 
-    for (i = 0; i < num_estudiantes; i++) {
-        snprintf(path_notas, MAX_PATH, "%s/%s/%s", STU_DIR_PATH, gp_tabla_estudiantes[i].dni,NOTAS_FILE);
-        nota = 2 * 5 - gp_tabla_estudiantes[i].nota;
-        media_total += gp_tabla_estudiantes[i].nota; /*aquí solo sumamos las notas de todos los estudiantes*/
+    for (int estudiante = 0; estudiante < num_estudiantes; estudiante++) {
+        snprintf(path_notas, MAX_PATH, "%s/%s/%s", STU_DIR_PATH, gp_tabla_estudiantes[estudiante].dni, ARCHIVO_NOTAS);
+        nota = 2 * 5 - gp_tabla_estudiantes[estudiante].nota;
+        media_total += gp_tabla_estudiantes[estudiante].nota; /*aquí solo sumamos las notas de todos los estudiantes*/
 
         if((notas_file = fopen(path_notas, "w")) == NULL){
+            free(gp_tabla_estudiantes);
             perror("[PC] Error creando el archivo de notas\n");
             exit(EXIT_FAILURE);
         }
@@ -70,21 +71,26 @@ int main(int argc, char *argv[]){
     snprintf(str_notas, MAX_STR,"%f",media_total); 
     if( write(atoi(argv[1]), str_notas, strlen(str_notas) + 1) != strlen(str_notas) + 1){
         perror("[PC] Error enviando la nota media. \n");
+        free(gp_tabla_estudiantes);
         exit(EXIT_FAILURE);
     }
 
     if (kill(getppid(), SIGUSR2) == -1) {
         perror("[PB] Error enviando señal al manager. \n");
+        free(gp_tabla_estudiantes);
+        exit(EXIT_FAILURE);
     }
 
     sleep(5); /* Para poder probar Ctrl + C*/
     printf("[PC] Proceso terminado. \n");
+    free(gp_tabla_estudiantes);
     return EXIT_SUCCESS;
 }
 
 void instalarManejador(){
     if(signal(SIGINT, manejador) == SIG_ERR){
         perror("[PC] No se pudo establecer el manejador de señales para SIGINT. \n");
+        free(gp_tabla_estudiantes);
         exit(EXIT_FAILURE);
     }  
 }
@@ -92,6 +98,7 @@ void instalarManejador(){
 void manejador(int signal){
     if (signal == SIGINT){
         printf("[PC] Terminando el proceso (SIGINT). \n");
+        free(gp_tabla_estudiantes);
         exit(EXIT_SUCCESS);
     }
 }

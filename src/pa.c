@@ -8,7 +8,7 @@
 #include <signal.h>
 #include "definitions.h"
 
-#define BUFFER_SIZE 4096
+static const size_t BUFFER_SIZE = 4096;
 
 /************************************************************
  * Project        : Practica 1 de Sistemas Operativos II
@@ -27,7 +27,6 @@ void manejador();
 
 int main(int argc, char *argv[]){
     int num_estudiantes = 0;
-    int i = 0; 
     char path[MAX_PATH];
     struct FichaEstudiante *p_tabla_estudiantes = NULL; /*tabla que almacena los datos de todos los estudiantes*/
 
@@ -47,8 +46,8 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    for (i = 0; i < num_estudiantes; i++) {
-        snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, p_tabla_estudiantes[i].dni); 
+    for (int estudiante = 0; estudiante < num_estudiantes; estudiante++) {
+        snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, p_tabla_estudiantes[estudiante].dni); 
         mkdir(path, 0775);
     } 
     printf("[PA] Proceso terminado. \n");

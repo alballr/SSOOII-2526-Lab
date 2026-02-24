@@ -11,12 +11,8 @@
 #include <sys/time.h>
 #include "definitions.h"
 
-#define BUFFER_SIZE 4096
-#define NUM_PROCESOS 3 /*Numero de procesos del programa (pa, pb y pc)*/
-#define CAPACIDAD_INI 10 /*Capacidad inicial de la estructura de estudiantes*/
-
 /************************************************************
- * Project        : Practica 1 de Sistemas Operativos II
+ * Project        : Práctica 1 de Sistemas Operativos II
  *
  * Program name   : manager.c
  *
@@ -24,8 +20,14 @@
  *
  * Date created   : 10/02/2026
  *
- * Purpose        : Proceso encargado de la creación y manejo de los pdem
+ * Purpose        : Proceso encargado de la creación y manejo de los procesos hijo y control del programa.
  ************************************************************/
+
+ #define NUM_PROCESOS 3 /*Numero de procesos del programa (pa, pb y pc)*/
+
+ /*constantes*/
+static const size_t BUFFER_SIZE = 4096;
+static const int CAPACIDAD_INI = 10; /*Capacidad inicial de la estructura de estudiantes*/
 
  /* variables globales*/
 struct FichaEstudiante *g_Estudiantes = NULL; /*Tabla de fichas de estudiantes */
@@ -34,7 +36,7 @@ pid_t g_pids[NUM_PROCESOS]; /*almacena los pid de los procesos hijo*/
 pid_t g_pid_daemon; /* pid del proceso de backup*/
 struct timeval g_fin_B, g_fin_C, g_tiempo_ini1, g_tiempo_ini2; 
 double g_tiempo_B, g_tiempo_C;
-FILE *g_log_file; 
+FILE *g_log_file; /* Archivo de logs*/
 
 /* Métodos de apoyo */
 void crearFichas();
@@ -48,6 +50,7 @@ void esperarProcesos();
 void crearDaemon();
 void ejecutarBackup();
 void manejadorDaemon();
+void crearArchivoLogs();
 
 /************ Función Main ************/
 int main(int argc, char *argv[]){
@@ -56,17 +59,11 @@ int main(int argc, char *argv[]){
     int tuberia_C[2]; /*Tuberia que conecta el manager con el proceso C*/
     int tuberia_C2[2];/*Segunda tuberia que conecta el manager con el proceso C*/
     char str_tuberiaC[256], buffer[BUFFER_SIZE]; /*String de la tubería de C*/
-    double tiempo_A, nota_media;
+    double tiempo_A = 0, nota_media = 0;
     struct timeval fin_A;
 
     crearDaemon();
-    
-    if ((g_log_file=fopen("log.txt", "w")) == NULL) {
-        perror("[MANAGER] Error al crear el archivo log.txt. \n");
-        return EXIT_FAILURE;
-    }
-    fprintf(g_log_file, "******** Log del sistema ********\n");
-
+    crearArchivoLogs();
     instalarManejador();
     crearFichas();
     crearTuberias(tuberia_A, tuberia_B, tuberia_C, tuberia_C2);    
@@ -171,12 +168,12 @@ void crearFichas(){
     int capacidad = CAPACIDAD_INI;
 
     if((fd = fopen(STU_FILE_PATH,"r"))== NULL){
-        perror("[MANAGER] Error intentando leer el archivo 'estudiantes.txt'");
+        perror("[MANAGER] Error intentando leer el archivo 'estudiantes.txt'\n");
         exit(EXIT_FAILURE);
     }
 
     if((g_Estudiantes = malloc(capacidad * sizeof(struct FichaEstudiante))) == NULL){
-        perror("[MANAGER] Error alocando espacio para las fichas de Estudiantes");
+        perror("[MANAGER] Error alocando espacio para las fichas de Estudiantes \n");
         exit(EXIT_FAILURE);
     }
 
@@ -185,7 +182,7 @@ void crearFichas(){
             capacidad *= 2;
             struct FichaEstudiante *tmp = realloc(g_Estudiantes, capacidad * sizeof(struct FichaEstudiante));
             if (tmp == NULL) {
-                perror("[MANAGER] Error realocando espacio para las fichas de Estudiantes");
+                perror("[MANAGER] Error realocando espacio para las fichas de Estudiantes \n");
                 free(g_Estudiantes);
                 fclose(fd);
                 exit(EXIT_FAILURE);
@@ -203,17 +200,17 @@ void crearFichas(){
 
 void crearTuberias(int* tuberia_A, int* tuberia_B, int* tuberia_C, int* tuberia_C2){
     if(pipe(tuberia_A) == -1){
-        perror("[MANAGER] Error estableciendo la tubería para el proceso A");
+        perror("[MANAGER] Error estableciendo la tubería para el proceso A \n");
         free(g_Estudiantes);
         exit(EXIT_FAILURE);
     }
     if(pipe(tuberia_B) == -1){
-        perror("[MANAGER] Error estableciendo la tubería para el proceso B");
+        perror("[MANAGER] Error estableciendo la tubería para el proceso B \n");
         free(g_Estudiantes);
         exit(EXIT_FAILURE);
     }
     if(pipe(tuberia_C) == -1 || pipe(tuberia_C2) == -1){
-        perror("[MANAGER] Error estableciendo las tuberías para el proceso C");
+        perror("[MANAGER] Error estableciendo las tuberías para el proceso C \n");
         free(g_Estudiantes);
         exit(EXIT_FAILURE);
     }
@@ -221,8 +218,14 @@ void crearTuberias(int* tuberia_A, int* tuberia_B, int* tuberia_C, int* tuberia_
 
 void enviarEstudiantes(int* tuberia){
     close(tuberia[LECTURA]);
-    write(tuberia[ESCRITURA], &g_numEstudiantes, sizeof(int));
-    write(tuberia[ESCRITURA], g_Estudiantes, g_numEstudiantes * sizeof(struct FichaEstudiante));
+    if(write(tuberia[ESCRITURA], &g_numEstudiantes, sizeof(int)) != sizeof(int)){
+         perror("[MANAGER] Error enviando el número de estudiantes. \n");
+        exit(EXIT_FAILURE);
+    };
+    if( write(tuberia[ESCRITURA], g_Estudiantes, g_numEstudiantes * sizeof(struct FichaEstudiante)) != (g_numEstudiantes * sizeof(struct FichaEstudiante))){
+         perror("[MANAGER] Error enviando la estructura de estudiantes. \n");
+        exit(EXIT_FAILURE);
+    };
     close(tuberia[ESCRITURA]);
 }
 
@@ -342,4 +345,12 @@ void manejadorDaemon(int sig) {
         printf("[DAEMON] Finalizando daemon de backup...\n");
         exit(EXIT_SUCCESS);
     }
+}
+
+void crearArchivoLogs(){
+    if ((g_log_file=fopen(ARCHIVO_LOG, "w")) == NULL) {
+        perror("[MANAGER] Error al crear el archivo de logs. \n");
+        return EXIT_FAILURE;
+    }
+    fprintf(g_log_file, "******** Log del sistema ********\n");
 }

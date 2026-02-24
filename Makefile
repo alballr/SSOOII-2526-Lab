@@ -3,7 +3,7 @@ DIREXE := exec/
 DIRHEA := include/
 DIRSRC := src/
 
-CFLAGS := -I$(DIRHEA) -c -Wall -ansi
+CFLAGS := -I$(DIRHEA) -c -Wall -std=c99
 LDLIBS := -lpthread -lrt
 CC := gcc
 
@@ -28,12 +28,11 @@ $(DIROBJ)%.o: $(DIRSRC)%.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean : clean-students
-	rm -rf *~ core $(DIROBJ) $(DIREXE)
+	rm -rf *~ core $(DIROBJ) $(DIREXE) log.txt backup/
 
 clean-students:
 	rm -rf ./estudiantes/*
 
 execute: all
 	./$(DIREXE)manager
-
 

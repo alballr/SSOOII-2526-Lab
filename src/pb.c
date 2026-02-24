@@ -41,36 +41,45 @@ int main(int argc, char* argv[]){
 
     if( read(0,gp_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
         perror("[PB] Error leyendo lista de estudiantes. \n");
+        free(gp_tabla_estudiantes);
         exit(EXIT_FAILURE);
     }
     
-    for (int i = 0; i < num_estudiantes; i++) {
-        switch(gp_tabla_estudiantes[i].grupo){
+    for (int estudiante = 0; estudiante < num_estudiantes; estudiante++) {
+        switch(gp_tabla_estudiantes[estudiante].grupo){
             case 'A':
-                snprintf(str_copy, MAX_PATH, "cp examenes/A.pdf %s/%s", STU_DIR_PATH, gp_tabla_estudiantes[i].dni);
+                snprintf(str_copy, MAX_PATH, "cp examenes/A.pdf %s/%s", STU_DIR_PATH, gp_tabla_estudiantes[estudiante].dni);
                 break;
             case 'B':
-                snprintf(str_copy, MAX_PATH, "cp examenes/B.pdf %s/%s", STU_DIR_PATH, gp_tabla_estudiantes[i].dni);
+                snprintf(str_copy, MAX_PATH, "cp examenes/B.pdf %s/%s", STU_DIR_PATH, gp_tabla_estudiantes[estudiante].dni);
                 break;
             case 'C':
-                snprintf(str_copy, MAX_PATH, "cp examenes/C.pdf %s/%s", STU_DIR_PATH, gp_tabla_estudiantes[i].dni);
+                snprintf(str_copy, MAX_PATH, "cp examenes/C.pdf %s/%s", STU_DIR_PATH, gp_tabla_estudiantes[estudiante].dni);
                 break;
+            default:
+                fprintf(stderr,"Error. Existe un alumno en el archivo de estudiantes con grupo incorrecto. El programa terminará \n");
+                free(gp_tabla_estudiantes);
+                return EXIT_FAILURE;
         }
         system(str_copy);    
     }
 
     if (kill(getppid(), SIGUSR1) == -1) {
         perror("[PB] Error enviando señal al manager.\n");
+        free(gp_tabla_estudiantes);
+        return EXIT_FAILURE;
     }
 
     sleep(5); /* Para poder probar el Ctrl + C*/
     printf("[PB] Proceso terminado. \n");
+    free(gp_tabla_estudiantes);
     return EXIT_SUCCESS;    
 }
 
 void instalarManejador(){
     if(signal(SIGINT, manejador) == SIG_ERR){
         perror("[PB] No se pudo establecer el manejador de señales para SIGINT\n");
+        free(gp_tabla_estudiantes);
         exit(EXIT_FAILURE);
     }  
 }

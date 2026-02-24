@@ -1,5 +1,7 @@
-#define STU_FILE_PATH "/home/alballr/SSOO/SSOOII-2526-Lab/estudiantes.txt"
-#define STU_DIR_PATH "/home/alballr/SSOO/SSOOII-2526-Lab/estudiantes"
+#define STU_FILE_PATH "./estudiantes.txt"
+#define STU_DIR_PATH "./estudiantes"
+#define ARCHIVO_LOG "log.txt"
+#define ARCHIVO_NOTAS "notas.txt" /*nombre del archivo de notas*/
 
 #define LECTURA 0
 #define ESCRITURA 1
