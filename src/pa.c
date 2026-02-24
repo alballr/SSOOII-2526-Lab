@@ -25,10 +25,11 @@ static const size_t BUFFER_SIZE = 4096;
 void instalarManejador();
 void manejador();
 
+struct FichaEstudiante *gp_tabla_estudiantes = NULL; /*tabla que almacena los datos de todos los estudiantes*/
+
 int main(int argc, char *argv[]){
     int num_estudiantes = 0;
     char path[MAX_PATH];
-    struct FichaEstudiante *p_tabla_estudiantes = NULL; /*tabla que almacena los datos de todos los estudiantes*/
 
     instalarManejador();
 
@@ -36,18 +37,19 @@ int main(int argc, char *argv[]){
         perror("[PA] Error leyendo numero de estudiantes. \n");
         exit(EXIT_FAILURE);
     }
-    if((p_tabla_estudiantes = malloc(num_estudiantes * sizeof(struct FichaEstudiante))) == NULL){
+    if((gp_tabla_estudiantes = malloc(num_estudiantes * sizeof(struct FichaEstudiante))) == NULL){
         perror("[PA] Error alocando espacio para las fichas de Estudiantes. \n");
         exit(EXIT_FAILURE);
     }
 
-    if( read(0,p_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
+    if( read(0,gp_tabla_estudiantes,num_estudiantes * sizeof(struct FichaEstudiante)) <= 0 ){
         perror("[PA] Error leyendo lista de estudiantes.  \n");
+        free(gp_tabla_estudiantes);
         exit(EXIT_FAILURE);
     }
 
     for (int estudiante = 0; estudiante < num_estudiantes; estudiante++) {
-        snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, p_tabla_estudiantes[estudiante].dni); 
+        snprintf(path, MAX_PATH, "%s/%s", STU_DIR_PATH, gp_tabla_estudiantes[estudiante].dni); 
         mkdir(path, 0775);
     } 
     printf("[PA] Proceso terminado. \n");
@@ -64,6 +66,7 @@ void instalarManejador(){
 void manejador(int signal){
     if (signal == SIGINT){
         printf("[PA] Terminando el proceso (SIGINT). \n");
+        free(gp_tabla_estudiantes);
         exit(EXIT_SUCCESS);
     }
 }

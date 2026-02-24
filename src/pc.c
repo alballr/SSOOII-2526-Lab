@@ -90,7 +90,6 @@ int main(int argc, char *argv[]){
 void instalarManejador(){
     if(signal(SIGINT, manejador) == SIG_ERR){
         perror("[PC] No se pudo establecer el manejador de señales para SIGINT. \n");
-        free(gp_tabla_estudiantes);
         exit(EXIT_FAILURE);
     }  
 }
