@@ -1,38 +1,28 @@
-DIROBJ := obj/
-DIREXE := exec/
-DIRHEA := include/
-DIRSRC := src/
+DIROBJ := obj
+DIREXE := exec
 
-CFLAGS := -I$(DIRHEA) -c -Wall -std=c99
-LDLIBS := -lpthread -lrt
-CC := gcc
+CXX := g++
+CPPFLAGS := -I.
+CXXFLAGS := -Wall -Wextra -std=c++17
+LDLIBS := -pthread -lm
 
-all : dirs manager pa pb pc 
+TARGET := ssooiigle
+SRCS := ssooiigle.cpp searcher.cpp searchResult.cpp
+OBJS := $(addprefix $(DIROBJ)/,$(SRCS:.cpp=.o))
+
+all: dirs $(DIREXE)/$(TARGET)
 
 dirs:
 	mkdir -p $(DIROBJ) $(DIREXE)
 
-manager: $(DIROBJ)manager.o 
-	$(CC) -o $(DIREXE)$@ $^ $(LDLIBS)
+$(DIREXE)/$(TARGET): $(OBJS)
+	$(CXX) -o $@ $^ $(LDLIBS)
 
-pa: $(DIROBJ)pa.o 
-	$(CC) -o $(DIREXE)$@ $^ $(LDLIBS)
+$(DIROBJ)/%.o: %.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-pb: $(DIROBJ)pb.o 
-	$(CC) -o $(DIREXE)$@ $^ $(LDLIBS)
-
-pc: $(DIROBJ)pc.o 
-	$(CC) -o $(DIREXE)$@ $^ $(LDLIBS)
-
-$(DIROBJ)%.o: $(DIRSRC)%.c
-	$(CC) $(CFLAGS) $^ -o $@
-
-clean : clean-students
-	rm -rf *~ core $(DIROBJ) $(DIREXE) log.txt backup/
-
-clean-students:
-	rm -rf ./estudiantes/*
+clean:
+	rm -rf $(DIROBJ) $(DIREXE)
 
 execute: all
-	./$(DIREXE)manager
-
+	./$(DIREXE)/$(TARGET)
