@@ -1,6 +1,17 @@
 #include "searcher.hpp"
-#include "inc.hpp"
+#include "definitions.hpp"
 
+/************************************************************
+ * Project        : Practica 2 de Sistemas Operativos II
+ *
+ * Program name   : searcher.cpp
+ *
+ * Author         : Alba Llorente
+ *
+ * Date created   : 02/03/2026
+ *
+ * Purpose        : Engloba el codigo que ejecutará un hilo (buscar ocurrencias en sus lineas del texto)
+ ************************************************************/
 
 // Constructor
 Searcher::Searcher(int id_, int start_, int finish_, std::string word_, std::string filepath_) 

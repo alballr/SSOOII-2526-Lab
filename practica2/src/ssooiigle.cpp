@@ -7,7 +7,19 @@
 #include <vector>
 #include <algorithm>  
 #include "searcher.hpp"
-#include "inc.hpp"
+#include "definitions.hpp"
+
+/************************************************************
+ * Project        : Practica 2 de Sistemas Operativos II
+ *
+ * Program name   : ssoiigle.cpp
+ *
+ * Author         : Alba Llorente
+ *
+ * Date created   : 02/03/2026
+ *
+ * Purpose        : Código del proceso principal, maneja los argumentos y crea y gestiona los hilos.
+ ************************************************************/
 
 // funciones de soporte
 void parseArgv(int argc, char * argv[], int *n_threads);
