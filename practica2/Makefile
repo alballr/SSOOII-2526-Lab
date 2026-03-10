@@ -29,3 +29,6 @@ clean:
 
 execute: all
 	./$(DIREXE)$(TARGET) $(ARGS)
+
+make test: all
+	./$(DIREXE)$(TARGET) libros/17_LEYES_DEL_TRABAJO_EN_EQUIPO.txt ley 4

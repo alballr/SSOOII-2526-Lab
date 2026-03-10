@@ -34,27 +34,28 @@ _ como marcador).
 3) COMPILACION
 Desde el directorio raiz del proyecto:
 
-  make
+    make
 
 4) EJECUCION
 Por terminal:
 
-  ./exec/ssooiigle <archivo> <palabra> <num_hilos>
+    ./exec/ssooiigle <archivo> <palabra> <num_hilos>
 
 Con Make:
 
-  make execute ARGS="<archivo> <palabra> <num_hilos>"
+    make execute ARGS="<archivo> <palabra> <num_hilos>"
 
 Ejemplo:
 
-  ./exec/ssooiigle libros/17_LEYES_DEL_TRABAJO_EN_EQUIPO.txt ley 4
+    ./exec/ssooiigle libros/17_LEYES_DEL_TRABAJO_EN_EQUIPO.txt ley 4
 
-
-
-5) LIMPIEZA
+5) TEST
+Se puede ejecutar rapidamente una prueba mediante:
+    make test
+6) LIMPIEZA
 
   make clean
 
-6) REPOSITORIO
+7) REPOSITORIO
 Codigo y cambios en:
 https://github.com/alballr/SSOOII-2526-Lab
