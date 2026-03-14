@@ -5,6 +5,18 @@
 #include <fstream>
 #include <sstream>
 
+/************************************************************
+ * Project        : Practica 2 de Sistemas Operativos II
+ *
+ * Program name   : searcher.hpp
+ *
+ * Author         : Alba Llorente
+ *
+ * Date created   : 02/03/2026
+ *
+ * Purpose        : Incluye las definiciones del codigo que ejecutará un hilo (buscar ocurrencias en sus lineas del texto)
+ ************************************************************/
+
 class Searcher{
     private:
         int id;
