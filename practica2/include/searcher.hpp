@@ -23,7 +23,7 @@ class Searcher{
         int start;
         int finish;
         std::vector<SearchResult> results;
-        std::string objective_word; //si mando ejecutar el codigo de otra clase no mantendria word (en caso de que fuese una variable global de main)
+        std::string objective_word; 
         std::string filepath;
     
     public:
