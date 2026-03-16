@@ -53,6 +53,7 @@ int main(int argc, char* argv[]){
     for( Searcher searcher : searchers){
         printOcurrences(searcher);
     }
+    return EXIT_SUCCESS;
 }
 
 void parseArgv(int argc, char * argv[], int *p_threads){

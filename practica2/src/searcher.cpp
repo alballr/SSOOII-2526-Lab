@@ -1,4 +1,5 @@
 #include "searcher.hpp"
+#include "definitions.hpp"
 
 /************************************************************
  * Project        : Practica 2 de Sistemas Operativos II
@@ -17,6 +18,7 @@ Searcher::Searcher(int id_, int start_, int finish_, std::string word_, std::str
 : id(id_), start(start_), finish(finish_), objective_word(word_), filepath(filepath_) {} 
 
 void Searcher::findOccurrences(){
+    std::mutex g_mtx; //declarado en definitions.hpp
     int n_line = 0;
     std::string line, current_word, previous_word, next_word;
     std::vector<std::string> line_words; // palabras separadas de cada linea
@@ -42,6 +44,7 @@ void Searcher::findOccurrences(){
             if(line_words[i] == objective_word){
                 previous_word = (i == 0) ? "_" : line_words[i - 1];
                 next_word = (i + 1 >= line_words.size()) ? "_" : line_words[i + 1];
+                std::lock_guard<std::mutex> lock(g_mtx);
                 results.emplace_back(n_line,previous_word,next_word);
             }
         }

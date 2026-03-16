@@ -9,7 +9,7 @@ CXXFLAGS := -Wall -Wextra -std=c++17
 LDLIBS := -pthread -lm
 
 TARGET := ssooiigle
-SRCS := ssooiigle.cpp searcher.cpp searchResult.cpp
+SRCS := ssooiigle.cpp searcher.cpp searchResult.cpp 
 SRCS := $(addprefix $(DIRSRC),$(SRCS))
 OBJS := $(addprefix $(DIROBJ),$(notdir $(SRCS:.cpp=.o)))
 
