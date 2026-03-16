@@ -1,5 +1,3 @@
-
-// Minimal includes for std::string
 #include <string>
 /************************************************************
  * Project        : Practica 2 de Sistemas Operativos II

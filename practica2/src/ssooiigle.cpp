@@ -43,11 +43,11 @@ int main(int argc, char* argv[]){
     }
     n_threads = std::min(n_threads, n_lines); //por si hay mas hilos que lineas tiene el archivo
     block_size = n_lines/n_threads;
-    for(int thread = 1; thread <= n_threads; thread++){
-        start = (thread - 1) * block_size + 1; 
-        finish = (thread == n_threads) ? n_lines : thread * block_size;
-        searchers.emplace_back(thread, start, finish, g_word, g_filepath);
-        threads.emplace_back(&Searcher::findOccurrences, &searchers[thread - 1]);
+    for(int thread_id = 1; thread_id <= n_threads; thread_id++){
+        start = (thread_id - 1) * block_size + 1; 
+        finish = (thread_id == n_threads) ? n_lines : thread_id * block_size;
+        searchers.emplace_back(thread_id, start, finish, g_word, g_filepath);
+        threads.emplace_back(&Searcher::findOccurrences, &searchers[thread_id - 1]);
     }
     std::for_each(threads.begin(), threads.end(), std::mem_fn(&std::thread::join));
     for( Searcher searcher : searchers){
